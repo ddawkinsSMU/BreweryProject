@@ -14,9 +14,8 @@ library(caret)
 library(e1071)
 
 ###reading in data Beers.csv and Breweries.csv
-Beers = read.csv(file.choose(),header = TRUE)
-Breweries = read.csv(file.choose(),header = TRUE)
-
+head(Beers)
+head(Breweries)
 
 ###Analysis Q1 - How many breweries are present in each state
 
