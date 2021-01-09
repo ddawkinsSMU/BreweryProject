@@ -13,6 +13,7 @@ library(usmap)
 library(class)
 library(caret)
 library(e1071)
+library(usmap)
 
 ###reading in data Beers.csv and Breweries.csv
 Beers = read.csv(file.choose(),header = TRUE)
