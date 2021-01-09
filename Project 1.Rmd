@@ -1,0 +1,328 @@
+---
+title: "R Notebook - Project 1 -Beer Analysis"
+output: html_Project1
+---
+###Libraries used
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+library(maps)
+library(mapproj)
+library(class)
+library(caret)
+library(e1071)
+
+###reading in data Beers.csv and Breweries.csv
+Beers = read.csv(file.choose(),header = TRUE)
+Breweries = read.csv(file.choose(),header = TRUE)
+
+
+###Analysis Q1 - How many breweries are present in each state
+
+# Combined data set is grouped sorted by amount of brewries in each state
+Breweries %>% 
+group_by(State) %>% 
+summarize(count = n() )%>% 
+arrange(desc(count))%>% 
+print(n=51)
+
+## Answer Q1 - The most breweries are Colorado (47), California (39) and Michigan (32). The fewest breweries are in DC, North Dakota, South Dakota and West Viginia (1 each).
+
+
+
+###Analysis Q2 - Merging Beweries and Beers data and printing first and last 6 observations
+
+#data sets are combined  on common variable Brewery ID
+BeersBreweries=merge(Beers,Breweries,by.x = "Brewery_id",by.y = "Brew_ID")
+colnames(BeersBreweries)[2]<- "Beer Name"
+colnames(BeersBreweries)[8]<- "Brewery Name"
+head(BeersBreweries,n=6)
+tail(BeersBreweries,n=6)
+
+
+
+###Analysis Q3- Missing values (NA's analysis)
+
+#replacing Blank Values with NAs
+BeersBreweries [BeersBreweries==""]<- NA
+
+#Finding miss values in the entire data set 
+apply(is.na(BeersBreweries),2,sum)
+
+#Filtering on each of the three columns that have missing values
+MissingIBU <- BeersBreweries %>% filter(is.na(IBU))
+MissingABV <- BeersBreweries %>% filter(is.na(ABV))
+MissingStyle <- BeersBreweries %>% filter(is.na(Style))
+
+#Creating "clean"" versions of the data set without missing values
+IBUClean <-BeersBreweries %>% filter(!is.na(IBU))
+ABVClean <- BeersBreweries %>% filter(!is.na(ABV))
+
+## Answer Q3 - There are 1005 missing IBU values, 62 missing ABV values, and 5 missing Style values. All rows missing the Style were also missing the IBU. We did not make any changes tot he missing values. Due to the large amount of missing values we analyzed a few different solutions such as median, mean or linear relationship but ulitmately decided to remove missing data points for relevant analysis.
+
+
+
+###Analysis Q4 - Compute median alcohol content and IBU for each state. Bar Chart
+
+#Grouping the "clean" IBU data by state, summarizing for median IBU and sorting in order 
+IBUCleanSummary<-IBUClean %>% 
+group_by(State) %>% 
+summarize(medianIBU = median(IBU) )%>% 
+arrange(desc(medianIBU))%>% 
+print(n=51)
+
+#Grouping the "clean" ABV data by state, summarizing for median ABV and sorting in order 
+ABVCleanSummary<-ABVClean %>% 
+group_by(State) %>% 
+summarize(medianABV = median(ABV))%>% 
+arrange(desc(medianABV))%>% 
+print(n=51)
+
+## Answer Q4 - Maine (61 IBU), West Virginia (57.5 IBU), FLorida, and Georgia (both 55 IBU) have the highest median IBU out of all the states. Ariziona (20.5 IBU), Kansas (20 IBU) and Wisconsin (19 IBU) have the lowest median IBUs. DC and Kentucky (both 6.25% ABV)  have the highest median ABV out of all the states. New Jersey (4.6% ABV) and Utha (4% ABV) hav the lowest median ABVs.
+
+
+#####NOT used (plan was to show median ABV and IBU by state on one graph, but were not able to adjust the scaling and sorting properly. Also the graph seemed too clustered.
+MedianComp=merge(ABVCleanSummary,IBUCleanSummary,by = "State")
+MedianComp<- MedianComp[c(1,3,2)]
+MedianComp<-MedianComp[order(MedianComp$medianIBU),]
+MedianCompMelt <- melt(MedianComp, id.vars = 'State')
+
+ggplot(MedianCompMelt, aes(x= reorder(State, -value), y=value, fill=variable))+
+  geom_bar(stat='identity', position='dodge')+
+   scale_y_continuous(
+    "MedianIBU",
+    sec.axis = sec_axis(~ . * .001, name = "MedianABV")
+  )
+
+
+
+###Analysis Q5 - State with max ABV and max IBU
+
+#Repeating code from Q4 to find the MAX ABV/IBU per state
+IBUCleanSummary2<-IBUClean %>% 
+group_by(State) %>% 
+summarize(medianIBU = median(IBU) )%>% 
+arrange(desc(medianIBU))%>% 
+print(n=51)
+
+ABVCleanSummary2<-ABVClean %>% 
+group_by(State) %>% 
+summarize(medianABV = median(ABV) )%>% 
+arrange(desc(medianABV))%>% 
+print(n=51)
+
+#Finding the MAX IBU/ABV value and its state for an indivdual brewery.
+IBUClean2<-IBUClean[order(-IBUClean$IBU),]
+ABVClean2<-ABVClean[order(-ABVClean$ABV),]
+
+## Answer Q5 - The state with the max median IBU is Maine and the states with the max median ABVs are DC and Kentucky. The brewery producing the beer with the highest IBU is located in Astoria Oregon. It is the Astoria Brewing Company and they are producing the "Bitter Bitch Imperial IPA" with an IBU of 138.The brewery producing the beer with the highest ABV is located in Boulder Colorado. It is the Upslope Brewing Company and they are producing the "Lee Hill Series Vol. 5 - Belgian Style Quadrupel Ale" with an ABV of 12.8%.
+
+
+
+###Analysis Q6 - Summary Statistics and distribution of ABV
+
+#Summary Statistics of the combined data set
+summary(BeersBreweries)
+
+##Answer Q6 - The beer brewed at the most breweries is the "Nonstop Hef Hop". 75% of beers have an ABV between 5.0% and 6.7%. 75% of beers have an IBU between 21 and 64. The most popular styles of beer are the American IPA, the American Pale Ale and the American Amber/ Red Ale. The brewery breewing the most beers is the "Brewery Vivant" with 62 different beers. The city brewing the most beers is Grand Rapis, brewing 66 different beers. Colorado is the state breewing the most beers with 265 different beers.
+
+
+
+###Analysis Q7 - Relationship + scatter plot IBU vs. ABV
+
+#Combining the two clean sets of data to create one data set with no NAs
+IBUABVClean <-ABVClean %>% filter(!is.na(IBU))
+
+#Scatterplot of ABV vs IBU
+IBUABVClean %>% 
+ggplot(mapping = aes(x = ABV, y = IBU)) +
+geom_point()
+
+#calculating linear relationship betweem IBU and ABV
+fit <- lm(IBU ~ ABV, data = IBUABVClean)
+summary(fit)
+confint(fit, level = 0.95)
+
+## Answer Q7 - Based on the scatterplot we can visually see a linear positive relationship between ABV and IBU. This is confirmed by running a linear regression analysis on it. The R-squared value is 44.97%, p-value (<2.2e-16) and the 95% confidence interval of the slope is [1207.77, 1356.31].
+
+
+
+###Analysis Q8 -KNN IBU/ABV Ale vs IPA
+
+#creating new column in the data set for the "Style Group", which classifies each beer to a style (here IPA vs. Ale) based on text recognition.
+IBUABVClean$StyleGroup = NA
+IBUABVClean$StyleGroup[grepl("ale",IBUABVClean$Style,ignore.case=TRUE)] = "Ale"
+IBUABVClean$StyleGroup[grepl("*ipa",IBUABVClean$Style,ignore.case=TRUE)] = "IPA"
+
+#summarizing data by style group as a check
+IBUABVClean %>% 
+group_by(StyleGroup) %>% 
+summarize(count = n() )
+
+#Scaling the data to prep it for KNN Analysis
+IBUABVCleanScaled = data.frame(ZIBU = scale(IBUABVClean$IBU), ZABV = scale(IBUABVClean$ABV), StyleGroup = IBUABVClean$StyleGroup)
+IBUABVCleanScaled <-IBUABVCleanScaled %>% filter(!is.na(StyleGroup))
+
+#Running KNN Analysis for k=3, k=7 and k=11
+classifications = knn.cv(IBUABVCleanScaled[,1:2], IBUABVCleanScaled$StyleGroup, k = 3)
+confusionMatrix(table(classifications,IBUABVCleanScaled$StyleGroup))
+
+classifications2 = knn.cv(IBUABVCleanScaled[,1:2], IBUABVCleanScaled$StyleGroup, k = 7)
+confusionMatrix(table(classifications2,IBUABVCleanScaled$StyleGroup))
+
+classifications3 = knn.cv(IBUABVCleanScaled[,1:2], IBUABVCleanScaled$StyleGroup, k = 11)
+confusionMatrix(table(classifications3,IBUABVCleanScaled$StyleGroup))
+
+## Answer Q8 - Our KNN model using internal CV predicts the style of beer as either IPA or Ale with ~85% accuracy for k=3, k=7 or k=11. 95% CI is ~ [83.5%, 87.5%] Sensitivity and Specifity of the model are ~88% and ~82 respectively.
+
+### Analysis Q8 Part 2
+
+#Running a naive bayes model with 100 iterations
+iterations = 100
+
+masterAcc = matrix(nrow = iterations)
+
+splitPerc = .7 #Training / Test split Percentage
+
+for(j in 1:iterations)
+{
+  
+  trainIndices = sample(1:dim(IBUABVClean)[1],round(splitPerc * dim(IBUABVClean)[1]))
+  train = IBUABVCleanScaled[trainIndices,]
+  test = IBUABVCleanScaled[-trainIndices,]
+  
+  model = naiveBayes(train[,c(1,2)],as.factor(train$StyleGroup),laplace = 1)
+  table(predict(model,test[,c(1,2)]),as.factor(test$StyleGroup))
+  CM = confusionMatrix(table(predict(model,test[,c(1,2)]),as.factor(test$StyleGroup)))
+  masterAcc[j] = CM$overall[1]
+}
+#calculating mean Accuracy of the model
+MeanAcc = colMeans(masterAcc)
+
+MeanAcc
+
+## Answer Q8 Part 2 - The Naive Bayes model, on avereage on 100 iterations run, predicts the Style of beer as eiter IPA or Ale with 84.2% accuracy.
+
+
+
+### Analysis Q9 - Grouping the style of beer based on text recognition
+
+#Removing all Style = NA data points from the full data set
+StyleClean <- BeersBreweries %>% filter(!is.na(Style)) 
+
+#Unlisting and splitting the Style column of the data set into individual words and sorting them in descending order
+theText = unlist(str_split(str_replace_all(StyleClean$Style,"[^[:alnum:] ]", ""), boundary("word")))
+sort(table(theText), decreasing=T)
+
+#Creating style group labels based on text recognition
+StyleClean$StyleGroup = NA
+StyleClean$StyleGroup[grepl("ale",StyleClean$Style,ignore.case=TRUE)] = "Ale"
+StyleClean$StyleGroup[grepl("*ipa",StyleClean$Style,ignore.case=TRUE)] = "IPA"
+StyleClean$StyleGroup[grepl("lager",StyleClean$Style,ignore.case=TRUE)] = "Lager"
+StyleClean$StyleGroup[grepl("stout",StyleClean$Style,ignore.case=TRUE)] = "Stout"
+StyleClean$StyleGroup[grepl("porter",StyleClean$Style,ignore.case=TRUE)] = "Porter"
+StyleClean$StyleGroup[grepl("pilsener|pilsner",StyleClean$Style,ignore.case=TRUE)] = "Pilsener"
+StyleClean$StyleGroup[grepl("beer",StyleClean$Style,ignore.case=TRUE)] = "Other Beer"
+StyleClean$StyleGroup[grepl("fruit",StyleClean$Style,ignore.case=TRUE)] = "Fruit"
+StyleClean$StyleGroup[grepl("witbier",StyleClean$Style,ignore.case=TRUE)] = "Witbier"
+StyleClean$StyleGroup[grepl("kölsch|hefeweizen|märzen|oktoberfest|berliner|weissbier|altbier",StyleClean$Style,ignore.case=TRUE)] = "German Bier"
+StyleClean$StyleGroup[grepl("cider",StyleClean$Style,ignore.case=TRUE)] = "Cider"
+StyleClean$StyleGroup[grepl("bitter",StyleClean$Style,ignore.case=TRUE)] = "Bitter"
+
+#Summary/count of the above style groups
+StyleClean %>% 
+group_by(StyleGroup) %>% 
+summarize(count = n() )
+
+#Another text recogntion step to indetify additional Style groups (used in repitition to add on to the style group steps above until found to be suficciently grouped)
+FindMoreTypes <- StyleClean %>% filter(is.na(StyleGroup)) 
+theText2 = unlist(str_split(str_replace_all(FindMoreTypes$Style,"[^[:alnum:] ]", ""), boundary("word")))
+sort(table(theText2), decreasing=T)
+
+#creating new summary dataframe for further analysis
+TotalCount<-StyleClean %>% 
+group_by(StyleGroup, State) %>% 
+summarize(count = n())
+
+#Finding the  Top Style Group beer for each state
+TotalCountbyStatePer<-TotalCount%>% group_by(State) %>% mutate(percent = count/sum(count))
+TotalCountbyStatePer<-TotalCountbyStatePer[order(TotalCountbyStatePer$State),]
+TotalCountbyStatePer%>% print(n = 100)
+
+#Changing the type of the State column to character and removing leading white space
+TotalCountbyStatePer$State <-as.character(TotalCountbyStatePer$State)
+TotalCountbyStatePer$State  <- gsub('\\s+', '',  TotalCountbyStatePer$State )
+
+#Pie Chart Visualization for the composition of beer style groups by state
+p4 <- ggplot(data=TotalCountbyStatePer, aes(x="", y = percent, fill=StyleGroup)) + geom_bar(stat = "identity", position = position_fill()) +
+coord_polar(theta = "y") +
+    facet_wrap(~ State)  +
+  theme(axis.title.x = element_blank(),
+  axis.title.y = element_blank(), 
+  axis.ticks = element_blank(),
+  axis.text = element_blank(),
+  panel.grid  = element_blank()) + 
+    theme(legend.position='bottom') 
+    
+p4
+
+##What is our story here?
+
+#Finding the top (highest percentage) style group for each state
+TopTotalCountbyStatePer<-TotalCountbyStatePer%>%group_by(State)%>% filter(percent == max(percent)) %>% filter(1:n() == 1)
+
+#reading in US State map information for plotting
+us_states <- map_data("state")
+head(us_states)
+
+#creating dataframe with state names and abbreviations to allow the joining of the data
+state_abbs <- tibble(state = str_to_lower(state.name), abb = state.abb)
+
+#left joining the data on state names
+TopTotalCountbyStatePer2=merge(TopTotalCountbyStatePer,state_abbs,by.x = "State",by.y = "abb")
+TotalCountbyStatePerMap <- left_join(us_states, TopTotalCountbyStatePer2, c("region"="state"))
+
+#plotting the top style beer for each state on a US map
+p <- ggplot(data = TotalCountbyStatePerMap,
+            aes(x = long, y = lat,
+                group = group, fill = StyleGroup))
+
+p + geom_polygon(color = "gray90", size = 0.1) +
+    coord_map(projection = "albers", lat0 = 39, lat1 = 45) 
+    
+# Finding/mapping the states each style is the most popular in 
+TotalCountbyStylePer<-TotalCount%>% group_by(StyleGroup) %>% mutate(percent = count/sum(count))
+TotalCountbyStylePer<-TotalCountbyStylePer[order(TotalCountbyStylePer$StyleGroup),]
+TotalCountbyStylePer%>% print(n = 100)
+
+#Cleaning up state column for leading whitespace and changing type to character
+TotalCountbyStylePer$State <-as.character(TotalCountbyStylePer$State)
+TotalCountbyStylePer$State  <- gsub('\\s+', '',  TotalCountbyStylePer$State )
+
+#Mapping the Ale production as a percentage of total ale production in the US by state
+TotalCountbyStylePerAle <-TotalCountbyStylePer%>%filter (StyleGroup == "Ale")
+
+TotalCountbyStylePerAle=merge(TotalCountbyStylePerAle,state_abbs,by.x = "State",by.y = "abb")
+TotalCountbyStylePerAleMap <- left_join(us_states, TotalCountbyStylePerAle, c("region"="state"))
+
+p2 <- ggplot(data = TotalCountbyStylePerAleMap,
+            aes(x = long, y = lat,
+                group = group, fill = percent))
+
+p2 + geom_polygon(color = "gray90", size = 0.1) +
+    coord_map(projection = "albers", lat0 = 39, lat1 = 45) 
+    
+#Mapping the IPA production as a percentage of total ale production in the US by state
+
+TotalCountbyStylePerIPA <-TotalCountbyStylePer%>%filter (StyleGroup == "IPA")
+
+TotalCountbyStylePerIPA=merge(TotalCountbyStylePerIPA,state_abbs,by.x = "State",by.y = "abb")
+TotalCountbyStylePerIPAMap <- left_join(us_states, TotalCountbyStylePerIPA, c("region"="state"))
+
+p3 <- ggplot(data = TotalCountbyStylePerIPAMap,
+            aes(x = long, y = lat,
+                group = group, fill = percent))
+
+p3 + geom_polygon(color = "gray90", size = 0.1) +
+    coord_map(projection = "albers", lat0 = 39, lat1 = 45) 
