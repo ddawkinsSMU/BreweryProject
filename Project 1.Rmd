@@ -28,6 +28,65 @@ print(n=51)
 
 ## Answer Q1 - The most breweries are Colorado (47), California (39) and Michigan (32). The fewest breweries are in DC, North Dakota, South Dakota and West Viginia (1 each).
 
+# Rename "State" column to "state" for the plot_usmap 
+# Group Breweries by state
+breweries_gb <- Breweries %>%
+  rename(
+    state = State
+  ) %>%
+  group_by(state) %>%
+  summarise(
+    count=n()
+    )
+
+# Merge Beers and Breweries data
+full_bar <- merge(Beers, Breweries, by.x = "Brewery_id", by.y = "Brew_ID")
+
+# Rename "State" column to "state" for the plot_usmap 
+# Group Breweries by state, get count, abv(&ibu) median and max
+full_bar_gb <- full_bar %>%
+  rename(
+    state = State
+  ) %>%
+  group_by(state) %>%
+  summarise(
+    count=n(),
+    abv_median = median(ABV, na.rm = TRUE),
+    ibu_median = median(IBU, na.rm = TRUE),
+    abv_max = max(ABV, na.rm = TRUE),
+    ibu_max = max(IBU, na.rm = TRUE)
+    )
+
+
+# Map number of breweries in each State
+plot_usmap(data = breweries_gb, values = "count", color = "white") + 
+  scale_fill_continuous(
+    low = "blue", high = "red", name = "Breweries per State", label = scales::comma
+  ) + theme(legend.position = "right")
+
+# Map number of ABV median in each State
+plot_usmap(data = full_bar_gb, values = "abv_median", color = "white") + 
+  scale_fill_continuous(
+    low = "blue", high = "red", name = "Median ABV per State", label = scales::comma
+  ) + theme(legend.position = "right")
+
+# Map number of ABV max in each State
+plot_usmap(data = full_bar_gb, values = "abv_max", color = "white") + 
+  scale_fill_continuous(
+    low = "blue", high = "red", name = "Max ABV per State", label = scales::comma
+  ) + theme(legend.position = "right")
+
+# Map number of IBU median in each State
+plot_usmap(data = full_bar_gb, values = "ibu_median", color = "white") + 
+  scale_fill_continuous(
+    low = "blue", high = "red", name = "Median IBU per State", label = scales::comma
+  ) + theme(legend.position = "right")
+
+# Map number of IBU max in each State
+plot_usmap(data = full_bar_gb, values = "ibu_max", color = "white") + 
+  scale_fill_continuous(
+    low = "blue", high = "red", name = "Max IBU per State", label = scales::comma
+  ) + theme(legend.position = "right")
 
 
 ###Analysis Q2 - Merging Beweries and Beers data and printing first and last 6 observations
