@@ -9,13 +9,14 @@ library(ggplot2)
 library(reshape2)
 library(maps)
 library(mapproj)
+library(usmap)
 library(class)
 library(caret)
 library(e1071)
 
 ###reading in data Beers.csv and Breweries.csv
-head(Beers)
-head(Breweries)
+Beers = read.csv(file.choose(),header = TRUE)
+Breweries = read.csv(file.choose(),header = TRUE)
 
 ###Analysis Q1 - How many breweries are present in each state
 
@@ -93,8 +94,8 @@ plot_usmap(data = full_bar_gb, values = "ibu_max", color = "white") +
 
 #data sets are combined  on common variable Brewery ID
 BeersBreweries=merge(Beers,Breweries,by.x = "Brewery_id",by.y = "Brew_ID")
-colnames(BeersBreweries)[2]<- "Beer Name"
-colnames(BeersBreweries)[8]<- "Brewery Name"
+colnames(BeersBreweries)[2]<- "Beer_Name"
+colnames(BeersBreweries)[8]<- "Brewery_Name"
 head(BeersBreweries,n=6)
 tail(BeersBreweries,n=6)
 
@@ -273,6 +274,9 @@ StyleClean <- BeersBreweries %>% filter(!is.na(Style))
 theText = unlist(str_split(str_replace_all(StyleClean$Style,"[^[:alnum:] ]", ""), boundary("word")))
 sort(table(theText), decreasing=T)
 
+theText2 = unlist(str_split(str_replace_all(StyleClean$Beer_Name,"[^[:alnum:] ]", ""), boundary("word")))
+sort(table(theText2), decreasing=T)
+
 #Creating style group labels based on text recognition
 StyleClean$StyleGroup = NA
 StyleClean$StyleGroup[grepl("ale",StyleClean$Style,ignore.case=TRUE)] = "Ale"
@@ -288,11 +292,20 @@ StyleClean$StyleGroup[grepl("kölsch|hefeweizen|märzen|oktoberfest|berliner|wei
 StyleClean$StyleGroup[grepl("cider",StyleClean$Style,ignore.case=TRUE)] = "Cider"
 StyleClean$StyleGroup[grepl("bitter",StyleClean$Style,ignore.case=TRUE)] = "Bitter"
 
-#Summary/count of the above style groups
-StyleClean %>% 
+#Summary/count of the above style groups and Pie Chart
+StyleCleanSummary<-StyleClean %>% 
 group_by(StyleGroup) %>% 
 summarize(count = n() )
 
+ggplot(StyleCleanSummary, aes(x="", y=count, fill=StyleGroup)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme(axis.title.x = element_blank(),
+  axis.title.y = element_blank(), 
+  axis.ticks = element_blank(),
+  axis.text = element_blank(),
+  panel.grid  = element_blank())
+  
 #Another text recogntion step to indetify additional Style groups (used in repitition to add on to the style group steps above until found to be suficciently grouped)
 FindMoreTypes <- StyleClean %>% filter(is.na(StyleGroup)) 
 theText2 = unlist(str_split(str_replace_all(FindMoreTypes$Style,"[^[:alnum:] ]", ""), boundary("word")))
@@ -324,8 +337,6 @@ coord_polar(theta = "y") +
     theme(legend.position='bottom') 
     
 p4
-
-##What is our story here?
 
 #Finding the top (highest percentage) style group for each state
 TopTotalCountbyStatePer<-TotalCountbyStatePer%>%group_by(State)%>% filter(percent == max(percent)) %>% filter(1:n() == 1)
