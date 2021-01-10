@@ -1,8 +1,14 @@
 ---
 title: "R Notebook - Project 1 -Beer Analysis"
-output: html_Project1
+output:
+  pdf_document: default
+  html_document: default
 ---
+
+# Libraries Used and Source Data
+```{r Libraries and Source Data}
 ###Libraries used
+library(knitr)
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
@@ -16,10 +22,13 @@ library(e1071)
 library(usmap)
 
 ###reading in data Beers.csv and Breweries.csv
-Beers = read.csv(file.choose(),header = TRUE)
-Breweries = read.csv(file.choose(),header = TRUE)
+Beers <- read_csv("Beers.csv")
+Breweries <- read_csv("Breweries.csv")
 
-###Analysis Q1 - How many breweries are present in each state
+```
+
+# Analysis Q1 - How many breweries are present in each state
+```{r Q1}
 
 # Combined data set is grouped sorted by amount of brewries in each state
 Breweries %>% 
@@ -51,7 +60,7 @@ full_bar_gb <- full_bar %>%
     state = State
   ) %>%
   group_by(state) %>%
-  summarise(
+  summarize(
     count=n(),
     abv_median = median(ABV, na.rm = TRUE),
     ibu_median = median(IBU, na.rm = TRUE),
@@ -90,20 +99,21 @@ plot_usmap(data = full_bar_gb, values = "ibu_max", color = "white") +
     low = "blue", high = "red", name = "Max IBU per State", label = scales::comma
   ) + theme(legend.position = "right")
 
+```
 
-###Analysis Q2 - Merging Beweries and Beers data and printing first and last 6 observations
-
+# Analysis Q2 - Merging Beweries and Beers data and printing first and last 6 observations
+```{r Q2}
 #data sets are combined  on common variable Brewery ID
 BeersBreweries=merge(Beers,Breweries,by.x = "Brewery_id",by.y = "Brew_ID")
 colnames(BeersBreweries)[2]<- "Beer_Name"
 colnames(BeersBreweries)[8]<- "Brewery_Name"
 head(BeersBreweries,n=6)
 tail(BeersBreweries,n=6)
+```
 
 
-
-###Analysis Q3- Missing values (NA's analysis)
-
+# Analysis Q3- Missing values (NA's analysis)
+```{r Q3}
 #replacing Blank Values with NAs
 BeersBreweries [BeersBreweries==""]<- NA
 
@@ -120,11 +130,11 @@ IBUClean <-BeersBreweries %>% filter(!is.na(IBU))
 ABVClean <- BeersBreweries %>% filter(!is.na(ABV))
 
 ## Answer Q3 - There are 1005 missing IBU values, 62 missing ABV values, and 5 missing Style values. All rows missing the Style were also missing the IBU. We did not make any changes tot he missing values. Due to the large amount of missing values we analyzed a few different solutions such as median, mean or linear relationship but ulitmately decided to remove missing data points for relevant analysis.
+```
 
 
-
-###Analysis Q4 - Compute median alcohol content and IBU for each state. Bar Chart
-
+# Analysis Q4 - Compute median alcohol content and IBU for each state. Bar Chart
+```{r Q4}
 #Grouping the "clean" IBU data by state, summarizing for median IBU and sorting in order 
 IBUCleanSummary<-IBUClean %>% 
 group_by(State) %>% 
@@ -140,9 +150,11 @@ arrange(desc(medianABV))%>%
 print(n=51)
 
 ## Answer Q4 - Maine (61 IBU), West Virginia (57.5 IBU), FLorida, and Georgia (both 55 IBU) have the highest median IBU out of all the states. Ariziona (20.5 IBU), Kansas (20 IBU) and Wisconsin (19 IBU) have the lowest median IBUs. DC and Kentucky (both 6.25% ABV)  have the highest median ABV out of all the states. New Jersey (4.6% ABV) and Utha (4% ABV) hav the lowest median ABVs.
+```
 
 
 #####NOT used (plan was to show median ABV and IBU by state on one graph, but were not able to adjust the scaling and sorting properly. Also the graph seemed too clustered.
+```{r}
 MedianComp=merge(ABVCleanSummary,IBUCleanSummary,by = "State")
 MedianComp<- MedianComp[c(1,3,2)]
 MedianComp<-MedianComp[order(MedianComp$medianIBU),]
@@ -154,11 +166,11 @@ ggplot(MedianCompMelt, aes(x= reorder(State, -value), y=value, fill=variable))+
     "MedianIBU",
     sec.axis = sec_axis(~ . * .001, name = "MedianABV")
   )
+```
 
 
-
-###Analysis Q5 - State with max ABV and max IBU
-
+# Analysis Q5 - State with max ABV and max IBU
+```{r Q5}
 #Repeating code from Q4 to find the MAX ABV/IBU per state
 IBUCleanSummary2<-IBUClean %>% 
 group_by(State) %>% 
@@ -177,20 +189,20 @@ IBUClean2<-IBUClean[order(-IBUClean$IBU),]
 ABVClean2<-ABVClean[order(-ABVClean$ABV),]
 
 ## Answer Q5 - The state with the max median IBU is Maine and the states with the max median ABVs are DC and Kentucky. The brewery producing the beer with the highest IBU is located in Astoria Oregon. It is the Astoria Brewing Company and they are producing the "Bitter Bitch Imperial IPA" with an IBU of 138.The brewery producing the beer with the highest ABV is located in Boulder Colorado. It is the Upslope Brewing Company and they are producing the "Lee Hill Series Vol. 5 - Belgian Style Quadrupel Ale" with an ABV of 12.8%.
+```
 
 
-
-###Analysis Q6 - Summary Statistics and distribution of ABV
-
+# Analysis Q6 - Summary Statistics and distribution of ABV
+```{r Q6}
 #Summary Statistics of the combined data set
 summary(BeersBreweries)
 
 ##Answer Q6 - The beer brewed at the most breweries is the "Nonstop Hef Hop". 75% of beers have an ABV between 5.0% and 6.7%. 75% of beers have an IBU between 21 and 64. The most popular styles of beer are the American IPA, the American Pale Ale and the American Amber/ Red Ale. The brewery breewing the most beers is the "Brewery Vivant" with 62 different beers. The city brewing the most beers is Grand Rapis, brewing 66 different beers. Colorado is the state breewing the most beers with 265 different beers.
+```
 
 
-
-###Analysis Q7 - Relationship + scatter plot IBU vs. ABV
-
+# Analysis Q7 - Relationship + scatter plot IBU vs. ABV
+```{r Q7}
 #Combining the two clean sets of data to create one data set with no NAs
 IBUABVClean <-ABVClean %>% filter(!is.na(IBU))
 
@@ -205,11 +217,11 @@ summary(fit)
 confint(fit, level = 0.95)
 
 ## Answer Q7 - Based on the scatterplot we can visually see a linear positive relationship between ABV and IBU. This is confirmed by running a linear regression analysis on it. The R-squared value is 44.97%, p-value (<2.2e-16) and the 95% confidence interval of the slope is [1207.77, 1356.31].
+```
 
 
-
-###Analysis Q8 -KNN IBU/ABV Ale vs IPA
-
+# Analysis Q8 -KNN IBU/ABV Ale vs IPA
+```{r Q8 pt.1}
 #creating new column in the data set for the "Style Group", which classifies each beer to a style (here IPA vs. Ale) based on text recognition.
 IBUABVClean$StyleGroup = NA
 IBUABVClean$StyleGroup[grepl("ale",IBUABVClean$Style,ignore.case=TRUE)] = "Ale"
@@ -235,9 +247,10 @@ classifications3 = knn.cv(IBUABVCleanScaled[,1:2], IBUABVCleanScaled$StyleGroup,
 confusionMatrix(table(classifications3,IBUABVCleanScaled$StyleGroup))
 
 ## Answer Q8 - Our KNN model using internal CV predicts the style of beer as either IPA or Ale with ~85% accuracy for k=3, k=7 or k=11. 95% CI is ~ [83.5%, 87.5%] Sensitivity and Specifity of the model are ~88% and ~82 respectively.
+```
 
-### Analysis Q8 Part 2
-
+# Analysis Q8 Part 2
+```{r Q8 pt.2}
 #Running a naive bayes model with 100 iterations
 iterations = 100
 
@@ -263,11 +276,11 @@ MeanAcc = colMeans(masterAcc)
 MeanAcc
 
 ## Answer Q8 Part 2 - The Naive Bayes model, on avereage on 100 iterations run, predicts the Style of beer as eiter IPA or Ale with 84.2% accuracy.
+```
 
 
-
-### Analysis Q9 - Grouping the style of beer based on text recognition
-
+# Analysis Q9 - Grouping the style of beer based on text recognition
+```{r Q9}
 #Removing all Style = NA data points from the full data set
 StyleClean <- BeersBreweries %>% filter(!is.na(Style)) 
 
@@ -396,3 +409,4 @@ p3 <- ggplot(data = TotalCountbyStylePerIPAMap,
 
 p3 + geom_polygon(color = "gray90", size = 0.1) +
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) 
+```
