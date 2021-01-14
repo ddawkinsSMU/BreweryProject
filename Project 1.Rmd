@@ -78,25 +78,25 @@ plot_usmap(data = breweries_gb, values = "count", color = "white") +
 # Map number of ABV median in each State
 plot_usmap(data = full_bar_gb, values = "abv_median", color = "white") + 
   scale_fill_continuous(
-    low = "blue", high = "red", name = "Median ABV per State", label = scales::comma
+    low = "red", high = "green3", name = "Median ABV per State", label = scales::comma
   ) + theme(legend.position = "right")
 
 # Map number of ABV max in each State
 plot_usmap(data = full_bar_gb, values = "abv_max", color = "white") + 
   scale_fill_continuous(
-    low = "blue", high = "red", name = "Max ABV per State", label = scales::comma
+    low = "red", high = "green3", name = "Max ABV per State", label = scales::comma
   ) + theme(legend.position = "right")
 
 # Map number of IBU median in each State
 plot_usmap(data = full_bar_gb, values = "ibu_median", color = "white") + 
   scale_fill_continuous(
-    low = "blue", high = "red", name = "Median IBU per State", label = scales::comma
+    low = "white", high = "blue", name = "Median IBU per State", label = scales::comma
   ) + theme(legend.position = "right")
 
 # Map number of IBU max in each State
 plot_usmap(data = full_bar_gb, values = "ibu_max", color = "white") + 
   scale_fill_continuous(
-    low = "blue", high = "red", name = "Max IBU per State", label = scales::comma
+    low = "white", high = "blue", name = "Max IBU per State", label = scales::comma
   ) + theme(legend.position = "right")
 
 ```
@@ -142,12 +142,22 @@ summarize(medianIBU = median(IBU) )%>%
 arrange(desc(medianIBU))%>% 
 print(n=51)
 
+#Bar Chart for the summary above
+IBU_barchart <- IBUCleanSummary %>% ggplot() + geom_bar(aes(x=reorder(State, -medianIBU), y=medianIBU), stat="identity", fill="blue") + ggtitle("Median IBU per State") +ylab("Median IBU") + xlab("State") +
+
+  theme(axis.text.x = element_text(angle=90, vjust=.6))
+
 #Grouping the "clean" ABV data by state, summarizing for median ABV and sorting in order 
 ABVCleanSummary<-ABVClean %>% 
 group_by(State) %>% 
 summarize(medianABV = median(ABV))%>% 
 arrange(desc(medianABV))%>% 
 print(n=51)
+
+#Bar Chart for the summary above
+ABV_barchart <- ABVCleanSummary %>% ggplot() + geom_bar(aes(x=reorder(State, -medianABV), y=medianABV), stat="identity", fill="green3") + ggtitle("Median ABV per State") +ylab("Median ABV") + xlab("State") +
+
+  theme(axis.text.x = element_text(angle=90, vjust=.6))
 
 ## Answer Q4 - Maine (61 IBU), West Virginia (57.5 IBU), FLorida, and Georgia (both 55 IBU) have the highest median IBU out of all the states. Ariziona (20.5 IBU), Kansas (20 IBU) and Wisconsin (19 IBU) have the lowest median IBUs. DC and Kentucky (both 6.25% ABV)  have the highest median ABV out of all the states. New Jersey (4.6% ABV) and Utha (4% ABV) hav the lowest median ABVs.
 ```
@@ -197,6 +207,12 @@ ABVClean2<-ABVClean[order(-ABVClean$ABV),]
 #Summary Statistics of the combined data set
 summary(BeersBreweries)
 
+#Plots for the distribution of ABV and IBU 
+ABV_sumstat <- BeersBreweries %>% ggplot() + geom_histogram(aes(x=ABV*100), fill="green3") + ggtitle("Distribution of ABV") + xlab("Percent ABV")
+
+IBU_sumstat <- BeersBreweries %>% ggplot() + geom_histogram(aes(x=IBU), fill="blue") + ggtitle("Distribution of IBU") + xlab("IBU")
+
+ 
 ##Answer Q6 - The beer brewed at the most breweries is the "Nonstop Hef Hop". 75% of beers have an ABV between 5.0% and 6.7%. 75% of beers have an IBU between 21 and 64. The most popular styles of beer are the American IPA, the American Pale Ale and the American Amber/ Red Ale. The brewery breewing the most beers is the "Brewery Vivant" with 62 different beers. The city brewing the most beers is Grand Rapis, brewing 66 different beers. Colorado is the state breewing the most beers with 265 different beers.
 ```
 
@@ -207,9 +223,9 @@ summary(BeersBreweries)
 IBUABVClean <-ABVClean %>% filter(!is.na(IBU))
 
 #Scatterplot of ABV vs IBU
-IBUABVClean %>% 
+IBUABVClean %>%
 ggplot(mapping = aes(x = ABV, y = IBU)) +
-geom_point()
+geom_point()+   labs(title="IBU vs ABV correlation", subtitle="Breweries", caption="source: Brewery Data")+geom_smooth(method=lm)
 
 #calculating linear relationship betweem IBU and ABV
 fit <- lm(IBU ~ ABV, data = IBUABVClean)
@@ -292,7 +308,7 @@ theText2 = unlist(str_split(str_replace_all(StyleClean$Beer_Name,"[^[:alnum:] ]"
 sort(table(theText2), decreasing=T)
 
 #Creating style group labels based on text recognition
-StyleClean$StyleGroup = NA
+StyleClean$StyleGroup = "Miscellaneous"
 StyleClean$StyleGroup[grepl("ale",StyleClean$Style,ignore.case=TRUE)] = "Ale"
 StyleClean$StyleGroup[grepl("*ipa",StyleClean$Style,ignore.case=TRUE)] = "IPA"
 StyleClean$StyleGroup[grepl("lager",StyleClean$Style,ignore.case=TRUE)] = "Lager"
@@ -319,7 +335,8 @@ ggplot(StyleCleanSummary, aes(x="", y=count, fill=StyleGroup)) +
   axis.ticks = element_blank(),
   axis.text = element_blank(),
   panel.grid  = element_blank())
-  
+
+
 #Another text recogntion step to indetify additional Style groups (used in repitition to add on to the style group steps above until found to be suficciently grouped)
 FindMoreTypes <- StyleClean %>% filter(is.na(StyleGroup)) 
 theText2 = unlist(str_split(str_replace_all(FindMoreTypes$Style,"[^[:alnum:] ]", ""), boundary("word")))
@@ -329,6 +346,24 @@ sort(table(theText2), decreasing=T)
 TotalCount<-StyleClean %>% 
 group_by(StyleGroup, State) %>% 
 summarize(count = n())
+
+#Calculating Mean ABV and IBU by Style
+
+StyleIBUABVCleanClean <- StyleClean %>% filter(!is.na(IBU))
+StyleIBUABVCleanClean <- StyleIBUABVCleanClean %>% filter(!is.na(ABV))
+
+StyleIBUABVCleanSummary<-StyleIBUABVCleanClean %>% 
+group_by(StyleGroup) %>% 
+summarize(medianABV=median(ABV), medianIBU=median(IBU) )
+
+StyleIBUABVCleanSummary %>%
+ggplot(mapping = aes(x = medianABV, y = medianIBU)) +
+geom_point()+   labs(title="Median ABV & IBU by Style", subtitle="Breweries", caption="source: Brewery Data")+ geom_text(aes(label=StyleGroup), size=3,hjust = -0.2,
+              vjust = 0.1,check_overlap = TRUE,angle=30)
+
+#Scatterplot for all beers colored by type
+StyleIBUABVCleanClean %>%ggplot(mapping = aes(x = ABV, y = IBU,fill=StyleGroup, colour= StyleGroup)) +
+geom_point()+   labs(title="ABV & IBU by Style", subtitle="Breweries", caption="source: Brewery Data")
 
 #Finding the  Top Style Group beer for each state
 TotalCountbyStatePer<-TotalCount%>% group_by(State) %>% mutate(percent = count/sum(count))
