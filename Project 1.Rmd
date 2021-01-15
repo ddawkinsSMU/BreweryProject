@@ -7,6 +7,10 @@ output:
 
 # Libraries Used and Source Data
 ```{r Libraries and Source Data}
+
+install.packages(c("knitr", "dplyr", "tidyverse", "ggplot2", "reshape2", 
+                   "maps", "mapproj", "class", "caret", "e1071", "usmap",
+                   "readr"))
 ###Libraries used
 library(knitr)
 library(dplyr)
