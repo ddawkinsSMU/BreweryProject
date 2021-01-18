@@ -3,6 +3,8 @@ DDS6306 Brewery Project Winter '21
 
 Team Beerologist
 
+Members: Adeel Qureshi, Darryl Dawkins, Scott Englerth
+
 Included:
 - Source Files (Beers.csv & Breweries.csv)
 - Codebook (Project 1 Codebook.docx)
